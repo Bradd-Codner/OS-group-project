@@ -162,7 +162,7 @@ int main(){
 		int arr, burst;
 		cout << "Enter arrival and burst time for P" << i + 1 << ":";
 		cin >> arr >> burst;
-		processes.push_back(Process(i = 1, arr, burst));
+		processes.push_back(Process(i + 1, arr, burst));
 	}
 	
 	runSJF(processes);
