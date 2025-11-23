@@ -31,6 +31,22 @@ struct Process {
         turnaroundTime = 0;
         responseTime = 0;
     }
+
+    // Reset metrics so the same process set can be reused
+    void reset() {
+        remainingTime = burstTime;
+        addedToQueue = false;
+        startTime = -1;
+        completionTime = -1;
+        waitingTime = 0;
+        turnaroundTime = 0;
+        responseTime = 0;
+    }
+
+    // Metric helpers
+    int turnaround() const { return completionTime - arrivalTime; }
+    int waiting() const { return turnaround() - burstTime; }
+    int response() const { return startTime - arrivalTime; }
 };
 
 #endif
