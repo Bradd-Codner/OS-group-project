@@ -1,5 +1,5 @@
-#ifndef MLQ_SCHEDULER_HPP
-#define MLQ_SCHEDULER_HPP
+#ifndef MLQ_HPP
+#define MLQ_HPP
 
 #include <vector>
 #include "process.hpp"
@@ -10,6 +10,3 @@
 void runMLQ(std::vector<Process> &allProcesses, int timeQuantumHigh);
 
 #endif
-
-
-
