@@ -2,30 +2,34 @@
 #define PROCESS_HPP
 
 struct Process {
-    int pid;
-    int arrivalTime;
-    int burstTime;
-    int remainingTime;
+    int pid;              // Process ID
+    int arrivalTime;      // Arrival time of the process
+    int burstTime;        // Original burst time
+    int remainingTime;    // Remaining time during execution
 
-    bool highPriority;    // used by MLQ: true = high queue, false = low queue
-    bool addedToQueue;    // used by MLQ to avoid double-enqueue
+    int priority;         // For Priority Scheduling (lower = higher priority)
+    bool highPriority;    // For MLQ: true = high queue (RR), false = low queue
+    bool addedToQueue;    // For MLQ: has this process been enqueued yet?
 
-    int startTime;        // first time it gets CPU
-    int completionTime;   // time when it finishes
+    int startTime;        // First time the process gets CPU
+    int completionTime;   // Time when process finishes
+    int waitingTime;      // Time spent waiting in the ready queue
+    int turnaroundTime;   // Total time from arrival to completion
+    int responseTime;     // Time from arrival to first CPU allocation
 
-    Process(int p = 0,
-            int arr = 0,
-            int burst = 0,
-            bool high = false)
-    {
-        pid           = p;
-        arrivalTime   = arr;
-        burstTime     = burst;
-        remainingTime = burst;
-        highPriority  = high;
-        addedToQueue  = false;
-        startTime     = -1;
-        completionTime= -1;
+    Process() {
+        pid = 0;
+        arrivalTime = 0;
+        burstTime = 0;
+        remainingTime = 0;
+        priority = 0;
+        highPriority = false;
+        addedToQueue = false;
+        startTime = -1;
+        completionTime = -1;
+        waitingTime = 0;
+        turnaroundTime = 0;
+        responseTime = 0;
     }
 };
 
