@@ -1,25 +1,20 @@
+#include "rr.hpp"
 #include <iostream>
 #include <vector>
+
 using namespace std;
 
-int main() {
-    int n, quantum;
-
-    cout << "Enter number of processes: ";
-    cin >> n;
+void runRoundRobin(vector<Process> &processes, int quantum) {
+    int n = (int)processes.size();
 
     vector<int> bt(n), rt(n);   // burst time, remaining time
     vector<int> waiting(n, 0);  // waiting time
     vector<int> turnaround(n, 0);
 
     for (int i = 0; i < n; i++) {
-        cout << "Enter Burst Time for P" << i+1 << ": ";
-        cin >> bt[i];
-        rt[i] = bt[i];
+        bt[i] = processes[i].burstTime;
+        rt[i] = processes[i].burstTime;
     }
-
-    cout << "Enter Time Quantum: ";
-    cin >> quantum;
 
     int time = 0;
 
@@ -32,7 +27,7 @@ int main() {
             if (rt[i] > 0) {
                 done = false;
 
-                cout << "Time " << time << ": P" << i+1 << " running\n";
+                cout << "Time " << time << ": P" << processes[i].pid << " running\n";
 
                 if (rt[i] > quantum) {
                     time += quantum;
@@ -40,7 +35,7 @@ int main() {
                 } else {
                     time += rt[i];
                     rt[i] = 0;
-                    turnaround[i] = time;
+                    turnaround[i] = time;  // completion time since all arrivals assumed at 0
                 }
             }
         }
@@ -54,12 +49,21 @@ int main() {
         waiting[i] = turnaround[i] - bt[i];
     }
 
+    // Copy results back to Process objects
+    for (int i = 0; i < n; i++) {
+        processes[i].completionTime = turnaround[i];
+        processes[i].turnaroundTime = turnaround[i];
+        processes[i].waitingTime = waiting[i];
+        processes[i].startTime = (waiting[i] > 0 ? 0 : 0); // simple model
+        processes[i].responseTime = processes[i].startTime - processes[i].arrivalTime;
+    }
+
     // Output results
     double avgW = 0, avgT = 0;
 
-    cout << "\n=== Results ===\n";
+    cout << "\n=== Round Robin Results ===\n";
     for (int i = 0; i < n; i++) {
-        cout << "P" << i+1
+        cout << "P" << processes[i].pid
              << " | Burst: " << bt[i]
              << " | Waiting: " << waiting[i]
              << " | Turnaround: " << turnaround[i]
@@ -69,8 +73,6 @@ int main() {
         avgT += turnaround[i];
     }
 
-    cout << "\nAverage Waiting Time: " << avgW / n;
-    cout << "\nAverage Turnaround Time: " << avgT / n << endl;
-
-    return 0;
+    cout << "\nAverage Waiting Time: " << avgW / n << endl;
+    cout << "Average Turnaround Time: " << avgT / n << endl;
 }
