@@ -1,36 +1,41 @@
+#include "mlq.hpp"
 #include <iostream>
 #include <vector>
-#include <climits>  // for INT_MAX
+#include <climits>
 
 using namespace std;
 
-struct Process {
-    int pid;
-    int arrivalTime;
-    int burstTime;
-    int remainingTime;
+// helper: add any processes that arrive at this exact time
+static void addArrivals(vector<Process> &allProcesses,
+                        int currentTime,
+                        vector<Process*> &highQueue,
+                        vector<Process*> &lowQueue)
+{
+    for (int i = 0; i < (int)allProcesses.size(); i++) {
+        Process &p = allProcesses[i];
 
-    bool highPriority; // true = high queue (RR), false = low queue (FCFS)
+        if (!p.addedToQueue &&
+            p.arrivalTime == currentTime &&
+            p.remainingTime > 0) {
 
-    int startTime;      // first time it gets CPU
-    int completionTime; // time when it finishes
-
-    Process(int p, int arr, int burst, bool high)
-    {
-        pid = p;
-        arrivalTime = arr;
-        burstTime = burst;
-        remainingTime = burst;
-        highPriority = high;
-        startTime = -1;
-        completionTime = -1;
+            if (p.highPriority) {
+                highQueue.push_back(&p);
+                cout << "Time " << currentTime
+                     << ": P" << p.pid << " arrived (High Queue)" << endl;
+            } else {
+                lowQueue.push_back(&p);
+                cout << "Time " << currentTime
+                     << ": P" << p.pid << " arrived (Low Queue)" << endl;
+            }
+            p.addedToQueue = true; // make sure we never add it again
+        }
     }
-};
+}
 
-void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
-
-    vector<Process*> highQueue; // Round Robin queue (store pointers)
-    vector<Process*> lowQueue;  // FCFS queue (store pointers)
+void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh)
+{
+    vector<Process*> highQueue; // Round Robin queue (pointers to processes)
+    vector<Process*> lowQueue;  // FCFS queue (pointers to processes)
 
     int currentTime = 0;
     int completed = 0;
@@ -46,27 +51,12 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
     }
     currentTime = startOfSimulation;
 
+    // first arrivals at start time
+    addArrivals(allProcesses, currentTime, highQueue, lowQueue);
+
     while (completed < total) {
 
-        // 1. Add arrivals
-        for (int i = 0; i < total; i++) {
-            Process &p = allProcesses[i];
-
-            if (p.arrivalTime == currentTime && p.remainingTime > 0) {
-
-                if (p.highPriority) {
-                    highQueue.push_back(&p);
-                    cout << "Time " << currentTime
-                         << ": P" << p.pid << " arrived (High Queue)" << endl;
-                } else {
-                    lowQueue.push_back(&p);
-                    cout << "Time " << currentTime
-                         << ": P" << p.pid << " arrived (Low Queue)" << endl;
-                }
-            }
-        }
-
-        // 2. Choose queue
+        // 1. Choose queue
         Process *current = nullptr;
         bool fromHigh = false;
 
@@ -77,19 +67,20 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
             current = lowQueue[0];
         }
 
-        // 3. CPU idle
+        // 2. CPU idle
         if (current == nullptr) {
             cout << "Time " << currentTime << ": CPU idle" << endl;
             currentTime++;
+            addArrivals(allProcesses, currentTime, highQueue, lowQueue);
             continue;
         }
 
-        // 4. Set start time (response time)
+        // 3. Set start time (response time)
         if (current->startTime == -1) {
             current->startTime = currentTime;
         }
 
-        // 5. HIGH QUEUE (RR)
+        // 4. HIGH QUEUE (RR)
         if (fromHigh) {
             int run = 0;
             int slice = timeQuantumHigh;
@@ -103,17 +94,8 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
                 cpuBusyTime++;
                 run++;
 
-                // handle arrivals during RR
-                for (int i = 0; i < total; i++) {
-                    Process &p = allProcesses[i];
-                    if (p.arrivalTime == currentTime && p.remainingTime > 0) {
-                        if (p.highPriority) {
-                            highQueue.push_back(&p);
-                        } else {
-                            lowQueue.push_back(&p);
-                        }
-                    }
-                }
+                // check for new arrivals at this new time
+                addArrivals(allProcesses, currentTime, highQueue, lowQueue);
             }
 
             if (current->remainingTime == 0) {
@@ -129,7 +111,7 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
             }
         }
 
-        // 6. LOW QUEUE (FCFS)
+        // 5. LOW QUEUE (FCFS)
         else {
             cout << "Time " << currentTime
                  << ": Running P" << current->pid << " (Low Queue)" << endl;
@@ -139,17 +121,8 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
                 currentTime++;
                 cpuBusyTime++;
 
-                // arrivals during FCFS
-                for (int i = 0; i < total; i++) {
-                    Process &p = allProcesses[i];
-                    if (p.arrivalTime == currentTime && p.remainingTime > 0) {
-                        if (p.highPriority) {
-                            highQueue.push_back(&p);
-                        } else {
-                            lowQueue.push_back(&p);
-                        }
-                    }
-                }
+                // check for new arrivals at this new time
+                addArrivals(allProcesses, currentTime, highQueue, lowQueue);
             }
 
             current->completionTime = currentTime;
@@ -162,18 +135,22 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
 
     int endOfSimulation = currentTime;
 
-    // 7. Calculate metrics
+    // 6. Calculate metrics
     double totalWaiting = 0.0;
     double totalTurnaround = 0.0;
     double totalResponse = 0.0;
 
-    cout << "\nProcess Summary:\n";
+    cout << "\nProcess Summary (MLQ):\n";
     for (int i = 0; i < total; i++) {
         Process &p = allProcesses[i];
 
         int turnaround = p.completionTime - p.arrivalTime;
         int waiting = turnaround - p.burstTime;
         int response = p.startTime - p.arrivalTime;
+
+        p.turnaroundTime = turnaround;
+        p.waitingTime = waiting;
+        p.responseTime = response;
 
         totalTurnaround += turnaround;
         totalWaiting += waiting;
@@ -199,36 +176,10 @@ void runMLQ(vector<Process> &allProcesses, int timeQuantumHigh) {
     double utilization = (cpuBusyTime * 100.0) / simTime;
     double throughput = (double)total / simTime;
 
-    cout << "\nAverage Waiting Time: " << avgW << endl;
+    cout << "\n[MLQ Metrics]\n";
+    cout << "Average Waiting Time: " << avgW << endl;
     cout << "Average Turnaround Time: " << avgT << endl;
     cout << "Average Response Time: " << avgR << endl;
     cout << "CPU Utilization: " << utilization << "%" << endl;
     cout << "Throughput: " << throughput << " processes per time unit" << endl;
-}
-
-int main() {
-    int n;
-    cout << "Enter number of processes: ";
-    cin >> n;
-
-    vector<Process> processes;
-
-    for (int i = 0; i < n; i++) {
-        int arr, burst;
-        int highFlag;
-
-        cout << "Enter arrival, burst, highPriorityFlag (1 for high, 0 for low): ";
-        cin >> arr >> burst >> highFlag;
-
-        bool high = (highFlag == 1);
-        processes.push_back(Process(i + 1, arr, burst, high));
-    }
-
-    int q;
-    cout << "Enter quantum for high queue: ";
-    cin >> q;
-
-    runMLQ(processes, q);
-
-    return 0;
 }
