@@ -5,9 +5,11 @@
 #include "process.hpp"
 
 // Multi-Level Queue Scheduling:
-// - Foreground queue: Round Robin
-// - Background queue: FCFS
-void simulateMLQScheduling(std::vector<Process>& processes, int foregroundQuantum);
+// High-priority processes -> Round Robin
+// Low-priority processes  -> FCFS
+void runMLQ(std::vector<Process> &allProcesses, int timeQuantumHigh);
 
 #endif
+
+
 
