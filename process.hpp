@@ -17,20 +17,19 @@ struct Process {
     int turnaroundTime;   // Total time from arrival to completion
     int responseTime;     // Time from arrival to first CPU allocation
 
-    Process() {
-        pid = 0;
-        arrivalTime = 0;
-        burstTime = 0;
-        remainingTime = 0;
-        priority = 0;
-        highPriority = false;
-        addedToQueue = false;
-        startTime = -1;
-        completionTime = -1;
-        waitingTime = 0;
-        turnaroundTime = 0;
-        responseTime = 0;
-    }
+    // Constructor for hard-coded and file input
+    Process(int pid, int arrival, int burst, int remaining, int priority, bool highFlag)
+        : pid(pid), arrivalTime(arrival), burstTime(burst), remainingTime(remaining),
+          priority(priority), highPriority(highFlag), addedToQueue(false),
+          startTime(-1), completionTime(-1), waitingTime(0),
+          turnaroundTime(0), responseTime(0) {}
+
+    // Default constructor for manual input
+    Process()
+        : pid(0), arrivalTime(0), burstTime(0), remainingTime(0),
+          priority(0), highPriority(false), addedToQueue(false),
+          startTime(-1), completionTime(-1), waitingTime(0),
+          turnaroundTime(0), responseTime(0) {}
 
     // Reset metrics so the same process set can be reused
     void reset() {
